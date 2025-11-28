@@ -1,9 +1,39 @@
 import streamlit as st
+import random
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Real Keyboard Layout", layout="centered")
-st.title("⌨️ 실제 키보드 배치 (키보드 입력만 반응)")
+st.set_page_config(page_title="Typing Practice + Virtual Keyboard", layout="centered")
+st.title("⌨️ 알파벳 한 글자 타자 연습")
 
+st.write("화면에 나오는 영어 알파벳 한 글자를 입력하세요!")
+
+# -------------------------
+# 랜덤 알파벳 1글자 생성
+# -------------------------
+if "current_letter" not in st.session_state:
+    st.session_state.current_letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+st.write("## 🔠 현재 글자:")
+st.markdown(
+    f"<h1 style='font-size: 90px; text-align:center;'>{st.session_state.current_letter}</h1>",
+    unsafe_allow_html=True
+)
+
+# -------------------------
+# 입력창
+# -------------------------
+typed = st.text_input("여기에 입력하세요 (1글자)", max_chars=1)
+
+if typed:
+    if typed.upper() == st.session_state.current_letter:
+        st.success("정답! 다음 글자로 넘어갑니다.")
+        st.session_state.current_letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    else:
+        st.error("❌ 오답입니다. 다시 시도하세요!")
+
+# -------------------------
+# 가상 키보드
+# -------------------------
 html_code = """
 <style>
 .key {
@@ -22,7 +52,7 @@ html_code = """
 
 .key.small { width: 45px; }
 .key.medium { width: 70px; }
-.key.large { width: 250px; }  /* Spacebar */
+.key.large { width: 250px; }
 .key.enter { width: 90px; }
 .key.shift { width: 100px; }
 
@@ -34,9 +64,6 @@ html_code = """
 
 <div id="keyboard">
 
-    <!-- 숫자줄 생략 (원하면 추가해줄 수 있음) -->
-
-    <!-- 1줄: QWERTYUIOP -->
     <div>
         <div class="key small" id="Q">Q</div>
         <div class="key small" id="W">W</div>
@@ -50,7 +77,6 @@ html_code = """
         <div class="key small" id="P">P</div>
     </div>
 
-    <!-- 2줄: ASDFGHJKL -->
     <div>
         <div class="key small" id="A">A</div>
         <div class="key small" id="S">S</div>
@@ -63,7 +89,6 @@ html_code = """
         <div class="key small" id="L">L</div>
     </div>
 
-    <!-- 3줄: Shift + ZXCVBNM + Enter -->
     <div>
         <div class="key shift" id="SHIFT">Shift</div>
         <div class="key small" id="Z">Z</div>
@@ -76,7 +101,6 @@ html_code = """
         <div class="key enter" id="ENTER">Enter</div>
     </div>
 
-    <!-- 스페이스바 줄 -->
     <div style="text-align:center;">
         <div class="key large" id=" ">Space</div>
     </div>
@@ -84,7 +108,6 @@ html_code = """
 </div>
 
 <script>
-// ✔ 키보드 입력만 반응
 document.addEventListener("keydown", function(event) {
     let key = event.key;
 
@@ -106,4 +129,5 @@ document.addEventListener("keydown", function(event) {
 </script>
 """
 
-components.html(html_code, height=480)
+components.html(html_code, height=500)
+
