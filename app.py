@@ -3,7 +3,7 @@ import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Typing Game", layout="centered")
 
-st.title("⌨️ 한 글자 타자 연습 (QWERTY 버전)")
+st.title("⌨️ 영어 타자연습")
 
 html_code = """
 <style>
