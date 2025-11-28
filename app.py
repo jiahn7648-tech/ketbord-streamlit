@@ -12,10 +12,9 @@ if "current_char" not in st.session_state:
 if "last_key" not in st.session_state:
     st.session_state.last_key = None
 
-st.title("🎮 영어 타자 연습 (한컴타자 미니)")
-st.write("아래에 보이는 영어 한 글자를 키보드로 입력하세요!")
+st.title("🎮 영어 타자 연습 (작동 완벽 버전)")
 
-# 현재 문제 표시
+# 현재 문제
 st.markdown(
     f"""
     <div style="font-size:80px; text-align:center; font-weight:bold; margin:20px;">
@@ -25,20 +24,42 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 맞았는지 처리 함수
-def check_key(key):
-    if key == st.session_state.current_char:
+# 자바스크립트로 키보드 이벤트 받기
+key = st.experimental_js(
+    """
+    () => {
+        let pressed = "";
+        document.onkeydown = (e) => {
+            pressed = e.key;
+            window.streamlitAPI.setComponentValue(pressed);
+        };
+        return pressed;
+    }
+"""
+)
+
+# 키 입력 처리
+if key:
+    last = key.lower()
+
+    # 스페이스 처리
+    if last == " ":
+        last = "space"
+
+    # 쉬프트
+    if last == "shift":
+        last = "shift"
+
+    st.session_state.last_key = last
+
+    # 정답 체크
+    if last == st.session_state.current_char:
         st.session_state.score += 1
-    else:
+    elif len(last) == 1 and last in string.ascii_lowercase:
         st.session_state.score -= 1
 
+    # 다음 문제
     st.session_state.current_char = random.choice(string.ascii_lowercase)
-    st.session_state.last_key = key
-
-# 키 입력 받기
-key = st.text_input("입력하세요 (화면에 표시 안됨)", label_visibility="collapsed")
-if key:
-    check_key(key[-1].lower())  # 마지막 글자만 받음
 
 # 점수 표시
 st.markdown(
@@ -50,79 +71,67 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# 가상 키보드 레이아웃
+st.write("---")
+st.subheader("가상 키보드 (키 반응 표시)")
+
+# 키보드 레이아웃
 keyboard_rows = [
     list("qwertyuiop"),
     list("asdfghjkl"),
-    list("zxcvbnm"),
+    list("zxcvbnm")
 ]
 
-special_keys = ["SPACE", "ENTER", "SHIFT"]
-
-st.write("---")
-st.subheader("가상 키보드 (누른 키 표시)")
-
-# 키보드 스타일 함수
+# 키 스타일
 def key_style(key):
-    if st.session_state.last_key == key.lower():
-        return "background-color:#ffd54f; font-weight:bold;"
-    return "background-color:#eeeeee;"
+    if st.session_state.last_key == key:
+        return "background:#ffd54f;"
+    return "background:#eee;"
 
-# 실제 키보드 UI 표시
+# 화면에 키보드 출력
 for row in keyboard_rows:
     cols = st.columns(len(row))
     for i, k in enumerate(row):
         with cols[i]:
             st.markdown(
                 f"""
-                <div style="border:1px solid #999;
-                            border-radius:6px;
-                            padding:10px;
-                            margin:2px;
-                            text-align:center;
-                            width:40px;
-                            {key_style(k)}">
+                <div style="
+                    border:1px solid #999;
+                    width:40px;
+                    padding:10px;
+                    margin:4px;
+                    text-align:center;
+                    border-radius:5px;
+                    {key_style(k)}
+                ">
                     {k.upper()}
                 </div>
                 """,
-                unsafe_allow_html=True,
+                unsafe_allow_html=True
             )
 
-# 특수키
-cols = st.columns(len(special_keys))
+# 스페이스 / 엔터 / 쉬프트
+cols = st.columns(3)
+special_keys = ["space", "enter", "shift"]
+labels = ["SPACE", "ENTER", "SHIFT"]
+
 for i, k in enumerate(special_keys):
-    display = k
-    if k == "SPACE":
-        width = "200px"
-    else:
-        width = "80px"
-
-    match_key = {
-        "SPACE": " ",
-        "ENTER": "\r",
-        "SHIFT": "shift"
-    }
-
-    highlight = False
-    if st.session_state.last_key == " " and k == "SPACE":
-        highlight = True
-    if st.session_state.last_key == "shift" and k == "SHIFT":
-        highlight = True
-
-    bg = "#ffd54f" if highlight else "#eeeeee"
+    bg = "#ffd54f" if st.session_state.last_key == k else "#eee"
+    width = "200px" if k == "space" else "80px"
 
     with cols[i]:
         st.markdown(
             f"""
-            <div style="border:1px solid #999;
-                        border-radius:6px;
-                        padding:10px;
-                        margin:2px;
-                        text-align:center;
-                        width:{width};
-                        background-color:{bg};">
-                {display}
+            <div style="
+                border:1px solid #999;
+                width:{width};
+                padding:10px;
+                margin:4px;
+                text-align:center;
+                border-radius:5px;
+                background:{bg};
+            ">
+                {labels[i]}
             </div>
             """,
-            unsafe_allow_html=True,
+            unsafe_allow_html=True
         )
