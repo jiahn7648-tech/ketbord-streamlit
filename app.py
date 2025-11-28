@@ -3,195 +3,134 @@ import streamlit.components.v1 as components
 import random
 import string
 
-st.set_page_config(page_title="영어 타자 연습", layout="centered")
+st.set_page_config(page_title="Keyboard Test", layout="centered")
 
-# 세션 상태 초기화
+# 초기화
 if "score" not in st.session_state:
     st.session_state.score = 0
 if "current_char" not in st.session_state:
-    st.session_state.current_char = random.choice(string.ascii_lowercase)
+    st.session_state.current_char = random.choice(string.ascii_uppercase)
 if "last_key" not in st.session_state:
-    st.session_state.last_key = None
+    st.session_state.last_key = ""
 
-st.title("🎮 영어 타자 연습 (작동 안정화 버전)")
-st.write("화면을 클릭한 뒤 키보드를 누르세요. (브라우저 포커스 필요)")
+st.title("🔵 키보드 반응 + 영어 타자 게임")
 
-# 표시되는 큰 문자
 st.markdown(
     f"""
-    <div style="font-size:100px; text-align:center; font-weight:bold; margin:20px;">
-        {st.session_state.current_char.upper()}
-    </div>
+    <h1 style="font-size:80px; text-align:center; margin:10px;">
+        {st.session_state.current_char}
+    </h1>
     """,
     unsafe_allow_html=True,
 )
 
-# -------------------------
-# JS로 키 이벤트를 잡아 Python으로 전달하는 invisible component
-# -------------------------
-# components.html은 window.parent.postMessage로 'streamlit:setComponentValue' 타입의 메시지를 보내면
-# 그 값을 반환값으로 Python에서 받을 수 있음.
-js_code = """
-<div></div>
+# ---------------------------------------
+# 네가 만든 키보드 + 파이썬으로 값 전달 기능 추가
+# ---------------------------------------
+html_code = f"""
+<style>
+.key {{
+    width: 40px;
+    height: 40px;
+    border: 2px solid #555;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin: 5px;
+    font-size: 18px;
+    font-weight: bold;
+    transition: 0.2s;
+}}
+.key.active {{
+    background: yellow;
+    transform: scale(1.2);
+}}
+</style>
+
+<div id="keyboard">
+    <div>
+        <div class="key" id="Q">Q</div>
+        <div class="key" id="W">W</div>
+        <div class="key" id="E">E</div>
+        <div class="key" id="R">R</div>
+        <div class="key" id="T">T</div>
+        <div class="key" id="Y">Y</div>
+        <div class="key" id="U">U</div>
+        <div class="key" id="I">I</div>
+        <div class="key" id="O">O</div>
+        <div class="key" id="P">P</div>
+    </div>
+    <div>
+        <div class="key" id="A">A</div>
+        <div class="key" id="S">S</div>
+        <div class="key" id="D">D</div>
+        <div class="key" id="F">F</div>
+        <div class="key" id="G">G</div>
+        <div class="key" id="H">H</div>
+        <div class="key" id="J">J</div>
+        <div class="key" id="K">K</div>
+        <div class="key" id="L">L</div>
+    </div>
+    <div>
+        <div class="key" id="Z">Z</div>
+        <div class="key" id="X">X</div>
+        <div class="key" id="C">C</div>
+        <div class="key" id="V">V</div>
+        <div class="key" id="B">B</div>
+        <div class="key" id="N">N</div>
+        <div class="key" id="M">M</div>
+    </div>
+</div>
+
 <script>
-  // 브라우저에서 키를 누르면 부모 Streamlit 앱으로 전달
-  document.addEventListener("keydown", function(e) {
-    // e.key 값을 그대로 보냄
-    const k = e.key;
-    const msg = {
-      isStreamlitMessage: true,
-      type: "streamlit:setComponentValue",
-      value: k
-    };
+// 키보드 반응
+document.addEventListener("keydown", function(event) {{
+    let key = event.key.toUpperCase();
+    let element = document.getElementById(key);
+    if (element) {{
+        element.classList.add("active");
+        setTimeout(() => {{
+            element.classList.remove("active");
+        }}, 150);
+    }}
+
+    // Python으로 key 보내기
+    const msg = {{
+        isStreamlitMessage: true,
+        type: "streamlit:setComponentValue",
+        value: key
+    }};
     window.parent.postMessage(msg, "*");
-  });
+}});
 </script>
 """
 
-# 이 호출은 사용자가 키를 누를 때마다 해당 키 값을 반환(return)함
-pressed = components.html(js_code, height=0)  # 보이지 않게 높이 0
+pressed = components.html(html_code, height=350)
 
-# -------------------------
-# 키 처리 로직
-# -------------------------
+# ---------------------------------------
+# Python에서 키 처리
+# ---------------------------------------
 if pressed:
-    key = pressed  # raw key string from JS, 예: "a", "Shift", " "
-    key_lower = key.lower()
+    key = pressed.upper()
+    st.session_state.last_key = key
 
-    # normalize for space/shift/enter
-    if key == " ":
-        key_norm = "space"
-    elif key_lower == "shift":
-        key_norm = "shift"
-    elif key_lower == "enter":
-        key_norm = "enter"
-    else:
-        key_norm = key_lower
-
-    st.session_state.last_key = key_norm
-
-    # 알파벳 정답 처리: 한 글자 문제이므로 소문자 알파벳만 정답/오답 판정
-    if len(key_norm) == 1 and key_norm in string.ascii_lowercase:
-        if key_norm == st.session_state.current_char:
+    # 알파벳이면 점수 판정
+    if len(key) == 1 and key in string.ascii_uppercase:
+        if key == st.session_state.current_char:
             st.session_state.score += 1
         else:
             st.session_state.score -= 1
 
-        # 다음 문제로 바로 교체
-        st.session_state.current_char = random.choice(string.ascii_lowercase)
+        # 다음 문제 생성
+        st.session_state.current_char = random.choice(string.ascii_uppercase)
 
-    # 스페이스/엔터/쉬프트는 점수 변동 없이 다음 문제로 넘어가지 않음(원하면 변경 가능)
-
-# -------------------------
-# 점수 표시
-# -------------------------
+# 점수
 st.markdown(
     f"""
-    <div style="font-size:28px; font-weight:bold; text-align:center; margin-top:10px;">
+    <h2 style="text-align:center; margin-top:20px;">
         점수: {st.session_state.score}
-    </div>
+    </h2>
     """,
     unsafe_allow_html=True,
 )
-
-st.write("---")
-st.subheader("가상 키보드 (키보드 입력만 반응)")
-
-# 키보드 레이아웃 (실제 배치에 가깝게)
-keyboard_rows = [
-    list("qwertyuiop"),
-    list("asdfghjkl"),
-    list("zxcvbnm")
-]
-
-def key_bg(k):
-    # highlight 조건 (space/enter/shift 별명 처리)
-    if st.session_state.last_key == k:
-        return "#ffd54f"
-    if st.session_state.last_key == "space" and k == " ":
-        return "#ffd54f"
-    if st.session_state.last_key == "enter" and k.lower() == "enter":
-        return "#ffd54f"
-    if st.session_state.last_key == "shift" and k.lower() == "shift":
-        return "#ffd54f"
-    return "#eeeeee"
-
-# 출력: 문자 키들
-for row in keyboard_rows:
-    cols = st.columns(len(row))
-    for i, ch in enumerate(row):
-        with cols[i]:
-            st.markdown(
-                f"""
-                <div style="
-                    border:1px solid #999;
-                    width:46px;
-                    padding:10px;
-                    margin:4px;
-                    text-align:center;
-                    border-radius:6px;
-                    background:{key_bg(ch)};
-                    font-weight:700;
-                ">
-                    {ch.upper()}
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-# 특수키 줄 (Shift, Enter, Space)
-cols = st.columns([1,1,4])
-with cols[0]:
-    st.markdown(
-        f"""
-        <div style="
-            border:1px solid #999;
-            width:100%;
-            padding:10px;
-            margin:4px;
-            text-align:center;
-            border-radius:6px;
-            background:{key_bg('shift')};
-            font-weight:700;
-        ">
-            SHIFT
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-with cols[1]:
-    st.markdown(
-        f"""
-        <div style="
-            border:1px solid #999;
-            width:100%;
-            padding:10px;
-            margin:4px;
-            text-align:center;
-            border-radius:6px;
-            background:{key_bg('enter')};
-            font-weight:700;
-        ">
-            ENTER
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-with cols[2]:
-    st.markdown(
-        f"""
-        <div style="
-            border:1px solid #999;
-            width:100%;
-            padding:12px;
-            margin:4px;
-            text-align:center;
-            border-radius:6px;
-            background:{key_bg('space')};
-            font-weight:700;
-        ">
-            SPACE
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
