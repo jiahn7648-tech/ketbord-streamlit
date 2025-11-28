@@ -2,58 +2,81 @@ import streamlit as st
 import random
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Keyboard Typing Game", layout="centered")
-st.title("⌨️ 한 글자 타자 연습 (입력창 없음)")
+st.set_page_config(page_title="Typing Game", layout="centered")
+st.title("⌨️ 한 글자 타자 연습")
 
-# ---------------------------------------------------
-# 랜덤 글자 생성
-# ---------------------------------------------------
+# 랜덤 글자 상태
 if "current_letter" not in st.session_state:
     st.session_state.current_letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-if "message" not in st.session_state:
-    st.session_state.message = ""
+if "flash" not in st.session_state:
+    st.session_state.flash = False
 
-# 화면에 제시된 글자 표시
+
+# -----------------------------
+# 글자 표시 (정답 시 반짝)
+# -----------------------------
+flash_class = "flash" if st.session_state.flash else ""
+
 st.markdown(
-    f"<h1 style='font-size: 100px; text-align:center;'>{st.session_state.current_letter}</h1>",
+    f"""
+    <style>
+    .letter {{
+        font-size: 100px;
+        text-align: center;
+        transition: 0.1s;
+    }}
+
+    .flash {{
+        background: yellow;
+        border-radius: 12px;
+    }}
+    </style>
+
+    <div class="letter {flash_class}">
+        {st.session_state.current_letter}
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
-# 판정 메시지 표시
-if st.session_state.message:
-    st.write(st.session_state.message)
+# 🔻 반짝 효과는 1회성으로 사용 후 바로 끄기
+if st.session_state.flash:
+    st.session_state.flash = False
 
 
-# ---------------------------------------------------
-# HTML + JS : 키 입력 감지 → Streamlit으로 전송
-# ---------------------------------------------------
-html_code = f"""
+# -----------------------------
+# JS + HTML (키 감지 → Streamlit 전달)
+# -----------------------------
+html_code = """
 <script>
-// Streamlit으로 메시지 보내는 함수
-function sendKeyToStreamlit(key) {{
-    const data = {{"pressed_key": key}};
-    window.parent.postMessage({{"isStreamlitMessage": true, "type": "streamlit:componentValue", "value": data}}, "*");
-}}
+// Streamlit으로 key 보내기
+function sendKeyToStreamlit(key) {
+    const data = { pressed_key: key };
+    window.parent.postMessage(
+        {isStreamlitMessage: true, type: "streamlit:componentValue", value: data},
+        "*"
+    );
+}
 
-// 키보드 입력 감지
-document.addEventListener("keydown", function(event) {{
+// 키보드 감지
+document.addEventListener("keydown", function(event) {
     let key = event.key.toUpperCase();
 
-    // 가상 키보드 반응 처리
-    let element = document.getElementById(key);
-    if (element) {{
-        element.classList.add("active");
-        setTimeout(() => element.classList.remove("active"), 150);
-    }}
+    // 가상키보드 반응
+    let el = document.getElementById(key);
+    if (el) {
+        el.classList.add("active");
+        setTimeout(() => el.classList.remove("active"), 150);
+    }
 
-    // Streamlit에게 key 전달
+    // Streamlit 전달
     sendKeyToStreamlit(key);
-}});
+});
 </script>
 
 <style>
-.key {{
+.key {
     height: 45px;
     border: 2px solid #444;
     border-radius: 6px;
@@ -64,14 +87,13 @@ document.addEventListener("keydown", function(event) {{
     font-size: 18px;
     font-weight: bold;
     transition: 0.12s;
-    user-select: none;
-}}
+}
+.key.small { width: 45px; }
 
-.key.small {{ width: 45px; }}
-.key.active {{
+.key.active {
     background: yellow;
-    transform: scale(1.13);
-}}
+    transform: scale(1.15);
+}
 </style>
 
 <div id="keyboard">
@@ -112,21 +134,19 @@ document.addEventListener("keydown", function(event) {{
 </div>
 """
 
-# JS에서 눌린 키 수신
-pressed = components.html(html_code, height=400)
+pressed = components.html(html_code, height=350)
 
 
-# ---------------------------------------------------
-# Streamlit에서 키 판정
-# ---------------------------------------------------
-# pressed에 key 값이 들어옴
+# -----------------------------
+# Python에서 키 처리
+# -----------------------------
 if isinstance(pressed, dict) and "pressed_key" in pressed:
     key = pressed["pressed_key"]
 
     if key == st.session_state.current_letter:
-        st.session_state.message = "✅ 정답!"
+        st.session_state.flash = True
         st.session_state.current_letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
     else:
-        st.session_state.message = f"❌ 오답! (입력: {key})"
+        pass  # 틀리면 아무 변화 없음
 
     st.rerun()
