@@ -2,41 +2,58 @@ import streamlit as st
 import random
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Typing Practice + Virtual Keyboard", layout="centered")
-st.title("⌨️ 알파벳 한 글자 타자 연습")
+st.set_page_config(page_title="Keyboard Typing Game", layout="centered")
+st.title("⌨️ 한 글자 타자 연습 (입력창 없음)")
 
-st.write("화면에 나오는 영어 알파벳 한 글자를 입력하세요!")
-
-# -------------------------
-# 랜덤 알파벳 1글자 생성
-# -------------------------
+# ---------------------------------------------------
+# 랜덤 글자 생성
+# ---------------------------------------------------
 if "current_letter" not in st.session_state:
     st.session_state.current_letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
 
-st.write("## 🔠 현재 글자:")
+if "message" not in st.session_state:
+    st.session_state.message = ""
+
+# 화면에 제시된 글자 표시
 st.markdown(
-    f"<h1 style='font-size: 90px; text-align:center;'>{st.session_state.current_letter}</h1>",
+    f"<h1 style='font-size: 100px; text-align:center;'>{st.session_state.current_letter}</h1>",
     unsafe_allow_html=True
 )
 
-# -------------------------
-# 입력창
-# -------------------------
-typed = st.text_input("여기에 입력하세요 (1글자)", max_chars=1)
+# 판정 메시지 표시
+if st.session_state.message:
+    st.write(st.session_state.message)
 
-if typed:
-    if typed.upper() == st.session_state.current_letter:
-        st.success("정답! 다음 글자로 넘어갑니다.")
-        st.session_state.current_letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
-    else:
-        st.error("❌ 오답입니다. 다시 시도하세요!")
 
-# -------------------------
-# 가상 키보드
-# -------------------------
-html_code = """
+# ---------------------------------------------------
+# HTML + JS : 키 입력 감지 → Streamlit으로 전송
+# ---------------------------------------------------
+html_code = f"""
+<script>
+// Streamlit으로 메시지 보내는 함수
+function sendKeyToStreamlit(key) {{
+    const data = {{"pressed_key": key}};
+    window.parent.postMessage({{"isStreamlitMessage": true, "type": "streamlit:componentValue", "value": data}}, "*");
+}}
+
+// 키보드 입력 감지
+document.addEventListener("keydown", function(event) {{
+    let key = event.key.toUpperCase();
+
+    // 가상 키보드 반응 처리
+    let element = document.getElementById(key);
+    if (element) {{
+        element.classList.add("active");
+        setTimeout(() => element.classList.remove("active"), 150);
+    }}
+
+    // Streamlit에게 key 전달
+    sendKeyToStreamlit(key);
+}});
+</script>
+
 <style>
-.key {
+.key {{
     height: 45px;
     border: 2px solid #444;
     border-radius: 6px;
@@ -48,22 +65,16 @@ html_code = """
     font-weight: bold;
     transition: 0.12s;
     user-select: none;
-}
+}}
 
-.key.small { width: 45px; }
-.key.medium { width: 70px; }
-.key.large { width: 250px; }
-.key.enter { width: 90px; }
-.key.shift { width: 100px; }
-
-.key.active {
+.key.small {{ width: 45px; }}
+.key.active {{
     background: yellow;
     transform: scale(1.13);
-}
+}}
 </style>
 
 <div id="keyboard">
-
     <div>
         <div class="key small" id="Q">Q</div>
         <div class="key small" id="W">W</div>
@@ -90,7 +101,6 @@ html_code = """
     </div>
 
     <div>
-        <div class="key shift" id="SHIFT">Shift</div>
         <div class="key small" id="Z">Z</div>
         <div class="key small" id="X">X</div>
         <div class="key small" id="C">C</div>
@@ -98,36 +108,25 @@ html_code = """
         <div class="key small" id="B">B</div>
         <div class="key small" id="N">N</div>
         <div class="key small" id="M">M</div>
-        <div class="key enter" id="ENTER">Enter</div>
     </div>
-
-    <div style="text-align:center;">
-        <div class="key large" id=" ">Space</div>
-    </div>
-
 </div>
-
-<script>
-document.addEventListener("keydown", function(event) {
-    let key = event.key;
-
-    if (key === "Shift") key = "SHIFT";
-    if (key === "Enter") key = "ENTER";
-    if (key === " ") key = " ";
-
-    let element =
-        document.getElementById(key.toUpperCase()) ||
-        document.getElementById(key);
-
-    if (element) {
-        element.classList.add("active");
-        setTimeout(() => {
-            element.classList.remove("active");
-        }, 150);
-    }
-});
-</script>
 """
 
-components.html(html_code, height=500)
+# JS에서 눌린 키 수신
+pressed = components.html(html_code, height=400)
 
+
+# ---------------------------------------------------
+# Streamlit에서 키 판정
+# ---------------------------------------------------
+# pressed에 key 값이 들어옴
+if isinstance(pressed, dict) and "pressed_key" in pressed:
+    key = pressed["pressed_key"]
+
+    if key == st.session_state.current_letter:
+        st.session_state.message = "✅ 정답!"
+        st.session_state.current_letter = random.choice("ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+    else:
+        st.session_state.message = f"❌ 오답! (입력: {key})"
+
+    st.rerun()
