@@ -20,8 +20,20 @@ body {
     font-size: 60px;
     font-weight: 900;
     margin-top: 10px;
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     color: #333;
+    transition: 0.15s;
+}
+
+/* 정답/오답 반짝 효과 */
+.target.flash-correct {
+    color: #ffe34d !important;
+    transform: scale(1.15);
+}
+
+.target.flash-wrong {
+    color: #ff4d4d !important;
+    transform: scale(1.15);
 }
 
 /* 키보드 전체 묶음 */
@@ -59,12 +71,7 @@ body {
 .key.active {
     background: #4da3ff;
     color: white;
-    transform: scale(1.03);
-}
-
-.key.flash {
-    background: #ffe866 !important;
-    transform: scale(1.08);
+    transform: scale(1.05);
 }
 </style>
 
@@ -103,21 +110,32 @@ document.addEventListener("keydown", function(event) {
     let key = event.key.toUpperCase();
     let keys = document.querySelectorAll(".key");
 
+    // 가상 키보드 반응
     keys.forEach(k => {
         if (k.innerText === key) {
             k.classList.add("active");
             setTimeout(() => k.classList.remove("active"), 130);
-
-            if (key === targetEl.innerText) {
-                k.classList.add("flash");
-
-                setTimeout(() => {
-                    k.classList.remove("flash");
-                    targetEl.innerText = getNextLetter();
-                }, 150);
-            }
         }
     });
+
+    // 정답 여부 판단
+    if (key === targetEl.innerText) {
+        // 정답 → 노란색 반짝
+        targetEl.classList.add("flash-correct");
+
+        setTimeout(() => {
+            targetEl.classList.remove("flash-correct");
+            targetEl.innerText = getNextLetter();  // 다음 글자로 변경
+        }, 150);
+
+    } else {
+        // 오답 → 빨간색 반짝
+        targetEl.classList.add("flash-wrong");
+
+        setTimeout(() => {
+            targetEl.classList.remove("flash-wrong");
+        }, 150);
+    }
 });
 </script>
 """
