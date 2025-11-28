@@ -1,39 +1,42 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Keyboard Demo", layout="centered")
-st.title("⌨️ 키보드 반응 데모 (키보드 입력만 반응)")
+st.set_page_config(page_title="Real Keyboard Layout", layout="centered")
+st.title("⌨️ 실제 키보드 배치 (키보드 입력만 반응)")
 
 html_code = """
 <style>
 .key {
-    height: 40px;
-    border: 2px solid #555;
-    border-radius: 8px;
+    height: 45px;
+    border: 2px solid #444;
+    border-radius: 6px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    margin: 5px;
+    margin: 4px;
     font-size: 18px;
     font-weight: bold;
-    transition: 0.15s;
+    transition: 0.12s;
     user-select: none;
-    padding: 0 10px;
 }
 
-.key.small { width: 40px; }
-.key.medium { width: 80px; }
-.key.large { width: 200px; }
+.key.small { width: 45px; }
+.key.medium { width: 70px; }
+.key.large { width: 250px; }  /* Spacebar */
+.key.enter { width: 90px; }
+.key.shift { width: 100px; }
 
 .key.active {
     background: yellow;
-    transform: scale(1.15);
+    transform: scale(1.13);
 }
 </style>
 
 <div id="keyboard">
 
-    <!-- 1줄 -->
+    <!-- 숫자줄 생략 (원하면 추가해줄 수 있음) -->
+
+    <!-- 1줄: QWERTYUIOP -->
     <div>
         <div class="key small" id="Q">Q</div>
         <div class="key small" id="W">W</div>
@@ -47,7 +50,7 @@ html_code = """
         <div class="key small" id="P">P</div>
     </div>
 
-    <!-- 2줄 -->
+    <!-- 2줄: ASDFGHJKL -->
     <div>
         <div class="key small" id="A">A</div>
         <div class="key small" id="S">S</div>
@@ -60,9 +63,9 @@ html_code = """
         <div class="key small" id="L">L</div>
     </div>
 
-    <!-- 3줄 -->
+    <!-- 3줄: Shift + ZXCVBNM + Enter -->
     <div>
-        <div class="key medium" id="SHIFT">Shift</div>
+        <div class="key shift" id="SHIFT">Shift</div>
         <div class="key small" id="Z">Z</div>
         <div class="key small" id="X">X</div>
         <div class="key small" id="C">C</div>
@@ -70,11 +73,11 @@ html_code = """
         <div class="key small" id="B">B</div>
         <div class="key small" id="N">N</div>
         <div class="key small" id="M">M</div>
-        <div class="key medium" id="ENTER">Enter</div>
+        <div class="key enter" id="ENTER">Enter</div>
     </div>
 
-    <!-- Spacebar -->
-    <div>
+    <!-- 스페이스바 줄 -->
+    <div style="text-align:center;">
         <div class="key large" id=" ">Space</div>
     </div>
 
@@ -85,13 +88,13 @@ html_code = """
 document.addEventListener("keydown", function(event) {
     let key = event.key;
 
-    // Shift는 이름이 event.key = "Shift" 로 옴
     if (key === "Shift") key = "SHIFT";
     if (key === "Enter") key = "ENTER";
     if (key === " ") key = " ";
 
-    let element = document.getElementById(key.toUpperCase()) 
-                || document.getElementById(key);
+    let element =
+        document.getElementById(key.toUpperCase()) ||
+        document.getElementById(key);
 
     if (element) {
         element.classList.add("active");
@@ -103,4 +106,4 @@ document.addEventListener("keydown", function(event) {
 </script>
 """
 
-components.html(html_code, height=450)
+components.html(html_code, height=480)
