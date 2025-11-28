@@ -1,12 +1,9 @@
 import streamlit as st
 import streamlit.components.v1 as components
 
-st.set_page_config(page_title="Keyboard Demo", layout="centered")
+st.set_page_config(page_title="Keyboard + Mouse Demo", layout="centered")
+st.title("🔵 키보드 + 마우스 반응 데모")
 
-st.title("🔵 키보드 반응 데모")
-st.write("키보드를 누르면 아래 가상 키보드가 반응합니다!")
-
-# HTML + CSS + JS 삽입
 html_code = """
 <style>
 .key {
@@ -20,11 +17,15 @@ html_code = """
     margin: 5px;
     font-size: 18px;
     font-weight: bold;
-    transition: 0.2s;
+    transition: 0.15s;
+    user-select: none;
 }
 .key.active {
     background: yellow;
     transform: scale(1.2);
+}
+.key:hover {
+    background: #eee;
 }
 </style>
 
@@ -64,6 +65,7 @@ html_code = """
 </div>
 
 <script>
+// ✔ 키보드 입력 반응
 document.addEventListener("keydown", function(event) {
     let key = event.key.toUpperCase();
     let element = document.getElementById(key);
@@ -74,7 +76,22 @@ document.addEventListener("keydown", function(event) {
         }, 150);
     }
 });
+
+// ✔ 마우스 클릭 반응
+document.querySelectorAll(".key").forEach(key => {
+    key.addEventListener("mousedown", () => {
+        key.classList.add("active");
+    });
+
+    key.addEventListener("mouseup", () => {
+        key.classList.remove("active");
+    });
+
+    key.addEventListener("mouseleave", () => {
+        key.classList.remove("active");
+    });
+});
 </script>
 """
 
-components.html(html_code, height=300)
+components.html(html_code, height=340)
